@@ -1,23 +1,20 @@
 import 'dart:io';
 
-import 'package:arb_merger/arb_merger.dart'
-    show PackageSettings;
+import 'package:arb_merger/arb_merger.dart' show PackageSettings;
 import 'package:yaml/yaml.dart';
 
 /// A class of arguments which the user can specify in pubspec.yaml
 class YamlArguments {
   static const inputFilepath = 'input_filepath';
-  static const outputFilepath = 'input_filepath';
+  static const outputFilepath = 'output_filepath';
   static const supportedLocales = 'supported_locales';
+  static const outputFileName = "output_file_name";
 }
 
 /// A class which parses yaml
 class YamlParser {
   /// The path to the pubspec file path
-  static const pubspecFilePath = 'pubspec.yaml';
-
-  /// The section id for package settings in the yaml file
-  static const yamlPackageSectionId = 'arb_merger';
+  static const pubspecFilePath = 'localization.yaml';
 
   /// Returns the package settings from pubspec
   static PackageSettings? packageSettingsFromPubspec() {
@@ -52,6 +49,6 @@ class YamlParser {
     final file = File(pubspecFilePath);
     final yamlString = file.readAsStringSync();
     final Map<dynamic, dynamic> yamlMap = loadYaml(yamlString);
-    return yamlMap[yamlPackageSectionId];
+    return yamlMap;
   }
 }

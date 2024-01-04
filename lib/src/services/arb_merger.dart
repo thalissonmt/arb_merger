@@ -5,16 +5,26 @@ import '../models/settings/package_settings.dart';
 
 /// A service which merge arb files
 abstract class ARBMerger {
+  static void createArbFileIfNotExits(String path, String locale) {
+    final directory = Directory(path);
+    if (directory.path.contains("*.arb")) {
+      return;
+    }
+    directory.createSync();
+    var file = File("$path/$locale.arb");
+    file.createSync();
+  }
 
   /// Convert arb files.
   static void convert(
-      PackageSettings packageSettings,
-      ) {
+    PackageSettings packageSettings,
+  ) {
     final _arbFiles = <File>{};
 
     for (String locale in packageSettings.supportedLocales) {
-      final _directory = Directory(packageSettings.inputFilepath + '/' + locale);
-
+      final _directory =
+          Directory(packageSettings.inputFilepath + '/' + locale);
+      createArbFileIfNotExits(_directory.path, locale);
       if (_directory.path.contains('.arb')) {
         if (!File(_directory.path).existsSync()) {
           print('Cannot find arb file specified which [${_directory.path}].');
@@ -42,19 +52,22 @@ abstract class ARBMerger {
     }
 
     for (final arbFile in _arbFiles) {
-      arbFile.writeAsStringSync(JsonEncoder.withIndent("  ").convert(Arb.fromFile(arbFile).arb));
+      arbFile.writeAsStringSync(
+          JsonEncoder.withIndent("  ").convert(Arb.fromFile(arbFile).arb));
     }
   }
 
   /// Merge arb files.
   static void merge(
-      PackageSettings packageSettings,
-      ) {
+    PackageSettings packageSettings,
+  ) {
     final _arbFiles = <File>{};
 
     for (String locale in packageSettings.supportedLocales) {
-      final mergedArbFile = File(packageSettings.outputFilepath + '/' + locale + '.arb');
-      final _directory = Directory(packageSettings.inputFilepath + '/' + locale);
+      final mergedArbFile =
+          File(packageSettings.outputFilepath + '/' + locale + '.arb');
+      final _directory =
+          Directory(packageSettings.inputFilepath + '/' + locale);
 
       if (!mergedArbFile.path.contains('.arb')) {
         print(
@@ -107,5 +120,5 @@ abstract class ARBMerger {
       String _convertedJson = encoder.convert(_mergedBundle.arb);
       mergedArbFile.writeAsStringSync(_convertedJson);
     }
-    }
+  }
 }
