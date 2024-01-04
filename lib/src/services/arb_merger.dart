@@ -6,12 +6,16 @@ import '../models/settings/package_settings.dart';
 /// A service which merge arb files
 abstract class ARBMerger {
   static void createArbFileIfNotExits(String path, String locale) {
-    final directory = Directory(path);
-    if (directory.path.contains("*.arb")) {
+    final directory = Directory("$path");
+    var checkIfFileExists = directory
+        .listSync()
+        .where((element) => element.path.contains("$locale.arb"))
+        .isNotEmpty;
+    if (checkIfFileExists) {
       return;
     }
-    directory.createSync();
-    var file = File("$path/$locale.arb");
+    directory.createSync(recursive: true);
+    var file = File("${directory.path}/$locale.arb");
     file.createSync();
   }
 
@@ -24,21 +28,8 @@ abstract class ARBMerger {
     for (String locale in packageSettings.supportedLocales) {
       final _directory =
           Directory(packageSettings.inputFilepath + '/' + locale);
-      createArbFileIfNotExits(_directory.path, locale);
-      if (_directory.path.contains('.arb')) {
-        if (!File(_directory.path).existsSync()) {
-          print('Cannot find arb file specified which [${_directory.path}].');
-          print(
-              'Usage: merge_arbs [merged arb file path] [merge target arb file paths]');
-          exit(0);
-        }
-      } else if (!_directory.existsSync()) {
-        print('Cannot find path specified which [${_directory.path}].');
-        print(
-            'Usage: merge_arbs [merged arb file path] [merge target arb file paths]');
-        exit(0);
-      }
-
+      //Create folder and empty file if not exists
+      createArbFileIfNotExits(packageSettings.outputFilepath, locale);
       if (_directory.path.contains('.arb')) {
         _arbFiles.add(File(_directory.path));
       } else {

@@ -14,7 +14,9 @@ class YamlArguments {
 /// A class which parses yaml
 class YamlParser {
   /// The path to the pubspec file path
-  static const pubspecFilePath = 'localization.yaml';
+  static const pubspecFilePath = 'pubspec.yaml';
+
+  static const pubspecAreaMap = "arb_merge";
 
   /// Returns the package settings from pubspec
   static PackageSettings? packageSettingsFromPubspec() {
@@ -49,6 +51,6 @@ class YamlParser {
     final file = File(pubspecFilePath);
     final yamlString = file.readAsStringSync();
     final Map<dynamic, dynamic> yamlMap = loadYaml(yamlString);
-    return yamlMap;
+    return yamlMap[pubspecAreaMap];
   }
 }
