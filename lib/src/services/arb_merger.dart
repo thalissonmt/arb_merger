@@ -1,115 +1,51 @@
 import 'dart:convert';
 import 'dart:io';
-import '../models/arb.dart';
-import '../models/settings/package_settings.dart';
 
-/// A service which merge arb files
-abstract class ARBMerger {
-  static void createArbFileIfNotExits(String path, String locale) {
-    final directory = Directory("$path");
-    var checkIfFileExists = directory
-        .listSync()
-        .where((element) => element.path.contains("$locale.arb"))
-        .isNotEmpty;
-    if (checkIfFileExists) {
+import 'package:arb_merger/arb_merger.dart';
+
+import '../models/arb.dart';
+
+class ArbMerger {
+  Future<void> merge(PackageSettings packageSettings) async {
+    final List<File> arbFiles = [];
+    for (String locale in packageSettings.supportedLocales) {
+      String pathInput = "${packageSettings.inputFilePath}/$locale";
+      String pathOutput = "${packageSettings.outputFilePath}/$locale.arb";
+      final inputDirectory = Directory(pathInput);
+      if (packageSettings.outputFileName != null) {
+        pathOutput =
+            "${packageSettings.outputFilePath}/${packageSettings.outputFileName}_$locale.arb";
+      }
+      final mergedArbFile = File(pathOutput);
+      createArbFileIfNotExits(pathOutput);
+      if (inputDirectory.path.contains(".arb")) {
+        arbFiles.add(File(inputDirectory.path));
+        continue;
+      }
+      arbFiles.addAll((await inputDirectory.list().toList())
+          .where((element) => element.path.contains(".arb"))
+          .map((e) => File(e.path)));
+      arbFiles.removeWhere((element) => element.uri == mergedArbFile.uri);
+      Arb mergedBundle = Arb();
+      for (final arbFile in arbFiles) {
+        final bundle = Arb.fromFile(arbFile);
+        mergedBundle = bundle.merge(mergedBundle);
+      }
+      var enconder = JsonEncoder.withIndent("  ").convert(mergedBundle.arb);
+      await mergedArbFile.writeAsString(enconder);
+    }
+  }
+
+  Future<void> createArbFileIfNotExits(String path) async {
+    var file = File(path);
+    if (await file.exists()) {
       return;
     }
-    directory.createSync(recursive: true);
-    var file = File("${directory.path}/$locale.arb");
-    file.createSync();
-  }
-
-  /// Convert arb files.
-  static void convert(
-    PackageSettings packageSettings,
-  ) {
-    final _arbFiles = <File>{};
-
-    for (String locale in packageSettings.supportedLocales) {
-      final _directory =
-          Directory(packageSettings.inputFilepath + '/' + locale);
-      //Create folder and empty file if not exists
-      createArbFileIfNotExits(packageSettings.outputFilepath, locale);
-      if (_directory.path.contains('.arb')) {
-        _arbFiles.add(File(_directory.path));
-      } else {
-        _arbFiles.addAll(
-          _directory
-              .listSync()
-              .where((directory) => directory.path.contains('.arb'))
-              .map((directory) => File(directory.path)),
-        );
-      }
+    var directory = file.parent;
+    if (!await directory.exists()) {
+      await directory.create();
+      // return;
     }
-
-    for (final arbFile in _arbFiles) {
-      arbFile.writeAsStringSync(
-          JsonEncoder.withIndent("  ").convert(Arb.fromFile(arbFile).arb));
-    }
-  }
-
-  /// Merge arb files.
-  static void merge(
-    PackageSettings packageSettings,
-  ) {
-    final _arbFiles = <File>{};
-
-    for (String locale in packageSettings.supportedLocales) {
-      final mergedArbFile =
-          File(packageSettings.outputFilepath + '/' + locale + '.arb');
-      final _directory =
-          Directory(packageSettings.inputFilepath + '/' + locale);
-
-      if (!mergedArbFile.path.contains('.arb')) {
-        print(
-            'Just one source arb file must specified. The [${mergedArbFile.path}] is not a arb file.');
-        print(
-            'Usage: merge_arbs [merged arb file path] [merge target arb file paths]');
-        exit(0);
-      }
-
-      if (!mergedArbFile.existsSync()) {
-        print('Cannot find path specified which [${mergedArbFile.path}].');
-        print(
-            'Usage: merge_arbs [merged arb file path] [merge target arb file paths]');
-        exit(0);
-      }
-
-      if (_directory.path.contains('.arb')) {
-        if (!File(_directory.path).existsSync()) {
-          print('Cannot find arb file specified which [${_directory.path}].');
-          print(
-              'Usage: merge_arbs [merged arb file path] [merge target arb file paths]');
-          exit(0);
-        }
-      } else if (!_directory.existsSync()) {
-        print('Cannot find path specified which [${_directory.path}].');
-        print(
-            'Usage: merge_arbs [merged arb file path] [merge target arb file paths]');
-        exit(0);
-      }
-
-      if (_directory.path.contains('.arb')) {
-        _arbFiles.add(File(_directory.path));
-      } else {
-        _arbFiles.addAll(
-          _directory
-              .listSync()
-              .where((directory) => directory.path.contains('.arb'))
-              .map((directory) => File(directory.path)),
-        );
-      }
-      _arbFiles.removeWhere((arbFile) => arbFile.uri == mergedArbFile.uri);
-
-      Arb _mergedBundle = Arb();
-      for (final arbFile in _arbFiles) {
-        final bundle = Arb.fromFile(arbFile);
-        _mergedBundle = bundle.merge(_mergedBundle);
-      }
-
-      var encoder = new JsonEncoder.withIndent("  ");
-      String _convertedJson = encoder.convert(_mergedBundle.arb);
-      mergedArbFile.writeAsStringSync(_convertedJson);
-    }
+    await file.create(recursive: true);
   }
 }

@@ -1,15 +1,8 @@
-import 'dart:io';
+import 'package:arb_merger/src/services/arb_merger.dart';
+import 'package:arb_merger/src/services/yaml_settings_reader.dart';
 
-import 'package:arb_merger/arb_merger.dart';
-
-import 'utils/yaml_parser.dart';
-
-void main() {
-  final packageSettings = YamlParser.packageSettingsFromPubspec();
-  if (packageSettings == null) {
-    exit(0);
-  }
-
-  ARBMerger.convert(packageSettings);
-  ARBMerger.merge(packageSettings);
+void main() async {
+  final packageSettings = await YamlSettingsReader().readYaml();
+  final ArbMerger arbMerger = ArbMerger();
+  await arbMerger.merge(packageSettings);
 }
