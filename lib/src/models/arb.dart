@@ -21,7 +21,7 @@ class Arb {
   factory Arb.fromArb(Map<String, dynamic> arb) {
     final bundleItems = Map.fromEntries(
       arb.entries.where(
-            (entry) => !entry.key.startsWith('@@'),
+        (entry) => !entry.key.startsWith('@@'),
       ),
     );
 
@@ -54,13 +54,14 @@ class Arb {
     return _arb;
   }
 
-  factory Arb.fromFile(File file) =>
-      Arb.fromArb(json.decode(file.readAsStringSync()));
+  factory Arb.fromFile(File file) {
+    final jsonString = file.readAsStringSync();
+    return Arb.fromArb(json.decode(jsonString));
+  }
 
   /// Get ARB format Object.
   SplayTreeMap<String, dynamic> get arb {
-    final SplayTreeMap<String, dynamic> _arb =
-    SplayTreeMap<String, dynamic>();
+    final SplayTreeMap<String, dynamic> _arb = SplayTreeMap<String, dynamic>();
     // _arb['@@last_modified'] = lastModified.toString();
 
     if (locale != null) {
@@ -74,6 +75,7 @@ class Arb {
     }
 
     for (final item in items) {
+      print("${item.name}: ${item.arb}");
       _arb.addAll(item.arb);
     }
 
@@ -85,18 +87,18 @@ class Arb {
   /// Items that not in this but other are append.
   /// Rest of all are same as this.
   Arb merge(Arb other) {
-    final keys = items.map((item) => item.name).toSet();
-    final otherKeys = other.items.map((item) => item.name).toSet();
-    final newKeys = otherKeys.difference(keys);
-    final newItems =
-    other.items.where((item) => newKeys.contains(item.name)).toSet();
-
+    // final keys = items.map((item) => item.name).toSet();
+    // final otherKeys = other.items.map((item) => item).toSet();
+    // // final newKeys = otherKeys.difference(keys);
+    // // final newItems =
+    // //     other.items.where((item) => newKeys.contains(item.name)).toSet();
+    items.addAll(other.items);
     return Arb(
       lastModified: DateTime.now(),
       author: author,
       context: context,
       locale: locale,
-      items: items.union(newItems),
+      items: items,
     );
   }
 }
@@ -114,15 +116,15 @@ class ArbItem {
     String? description,
     Map<String, dynamic>? placeholders,
   }) : options = ArbItemOptions(
-    type: type,
-    description: description,
-    placeholders: placeholders,
-  );
+          type: type,
+          description: description,
+          placeholders: placeholders,
+        );
 
   /// Get ARB format Object.
   SplayTreeMap<String, dynamic> get arb {
     final SplayTreeMap<String, dynamic> _options =
-    SplayTreeMap<String, dynamic>();
+        SplayTreeMap<String, dynamic>();
     _options[name] = value;
 
     if (options.arb != null) {
@@ -148,7 +150,7 @@ class ArbItemOptions {
   /// Get ARB format Object.
   SplayTreeMap<String, dynamic>? get arb {
     final SplayTreeMap<String, dynamic> _options =
-    SplayTreeMap<String, dynamic>();
+        SplayTreeMap<String, dynamic>();
     if (type != null) {
       _options['type'] = type;
     }

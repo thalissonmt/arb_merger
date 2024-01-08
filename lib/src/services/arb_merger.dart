@@ -2,16 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arb_merger/arb_merger.dart';
-
-import '../models/arb.dart';
+import 'package:arb_merger/src/models/arb.dart';
 
 class ArbMerger {
   Future<void> merge(PackageSettings packageSettings) async {
-    final List<File> arbFiles = [];
     for (String locale in packageSettings.supportedLocales) {
+      final List<File> arbFiles = [];
       String pathInput = "${packageSettings.inputFilePath}/$locale";
       String pathOutput = "${packageSettings.outputFilePath}/$locale.arb";
       final inputDirectory = Directory(pathInput);
+      var inputFiles = await inputDirectory.list().toList();
+      if (inputFiles.isEmpty) {
+        print("a pasta $pathInput esta vazia");
+        exit(0);
+      }
       if (packageSettings.outputFileName != null) {
         pathOutput =
             "${packageSettings.outputFilePath}/${packageSettings.outputFileName}_$locale.arb";
