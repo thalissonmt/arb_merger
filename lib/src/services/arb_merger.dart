@@ -26,9 +26,19 @@ class ArbMerger {
         arbFiles.add(File(inputDirectory.path));
         continue;
       }
-      arbFiles.addAll((await inputDirectory.list().toList())
-          .where((element) => element.path.contains(".arb"))
-          .map((e) => File(e.path)));
+      final allFolders = inputDirectory.listSync();
+
+      for (var element in allFolders) {
+        final tempDirectory = Directory(element.path);
+        if (tempDirectory.path.contains(".arb")) {
+          arbFiles.add(File(tempDirectory.path));
+          continue;
+        }
+        arbFiles.addAll((await tempDirectory.list().toList())
+            .where((element) => element.path.contains(".arb"))
+            .map((e) => File(e.path)));
+      }
+
       arbFiles.removeWhere((element) => element.uri == mergedArbFile.uri);
       Arb mergedBundle = Arb();
       for (final arbFile in arbFiles) {

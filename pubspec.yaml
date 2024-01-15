@@ -23,7 +23,7 @@ dev_dependencies:
 arb_merge:
   input_file_path: "assets/l10n"
   output_file_path: "lib/l10n"
-  supported_locales: ["en"]
+  supported_locales: ["pt"]
   output_file_name: "app"
 
 flutter:
