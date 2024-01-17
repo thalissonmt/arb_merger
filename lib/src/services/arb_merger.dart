@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:arb_merger/arb_merger.dart';
@@ -14,6 +15,12 @@ class ArbMerger {
       arbFiles.addAll(await readAllArbs(inputPath));
       arbFiles.removeWhere((element) => element.uri == mergedArbFile.uri);
       ArbModel mergedArb = ArbModel.empty();
+      for (var element in arbFiles) {
+        final Map<String, dynamic> arbMap =
+            json.decode(element.readAsStringSync());
+        final arb = ArbModel.fromArb(arbMap);
+        print(arb.toString());
+      }
     }
   }
 
