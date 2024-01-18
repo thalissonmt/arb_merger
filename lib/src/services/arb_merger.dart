@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arb_merger/arb_merger.dart';
-import 'package:arb_merger/src/models/arb_model.dart';
+import 'package:arb_merger/src/models/arb.dart';
 
 class ArbMerger {
   Future<void> merge(PackageSettings packageSettings) async {
@@ -14,14 +14,26 @@ class ArbMerger {
       final mergedArbFile = await createArbFileIfNotExits(outputFile);
       arbFiles.addAll(await readAllArbs(inputPath));
       arbFiles.removeWhere((element) => element.uri == mergedArbFile.uri);
-      ArbModel mergedArb = ArbModel.empty();
+      ArbFile mergedArb = ArbFile.empty();
       for (var element in arbFiles) {
         final Map<String, dynamic> arbMap =
             json.decode(element.readAsStringSync());
-        final arb = ArbModel.fromArb(arbMap);
-        print(arb.toString());
+        final arb = ArbFile.fromArb(arbMap);
+        mergedArb = await mergeArb(mergedArb, arb);
       }
+      mergedArbFile
+          .writeAsString(JsonEncoder.withIndent("  ").convert(mergedArb.arb));
     }
+  }
+
+  Future<ArbFile> mergeArb(ArbFile mergedArb, ArbFile arb) async {
+    return mergedArb.copyWith(
+      locale: arb.locale,
+      lastModified: arb.lastModified,
+      context: arb.context,
+      author: arb.author,
+      items: mergedArb.items.union(arb.items),
+    );
   }
 
   Future<List<File>> readAllArbs(String inputPath) async {
@@ -37,11 +49,20 @@ class ArbMerger {
         inputArbFiles.add(File(tempDirectory.path));
         continue;
       }
-      inputArbFiles.addAll((await tempDirectory.list().toList())
-          .where((element) => element.path.contains(".arb"))
-          .map((e) => File(e.path)));
+      inputArbFiles.addAll(
+        await readArbFiles(
+          await tempDirectory.list().toList(),
+        ),
+      );
     }
     return inputArbFiles;
+  }
+
+  Future<List<File>> readArbFiles(List<FileSystemEntity> directory) async {
+    return directory
+        .where((element) => element.path.contains(".arb"))
+        .map((e) => File(e.path))
+        .toList();
   }
 
   Future<File> createArbFileIfNotExits(String path) async {
