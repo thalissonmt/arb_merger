@@ -1,31 +1,38 @@
 import 'dart:collection';
-import 'dart:convert';
-import 'dart:io';
 
-/// Model class for ARB file.
-class Arb {
+import 'package:arb_merger/src/models/arb_item.dart';
+import 'package:arb_merger/src/models/arb_item_options.dart';
+import 'package:intl/intl.dart';
+
+class ArbFile {
   final DateTime lastModified;
-  final String? locale;
+  final String locale;
   final String? context;
   final String? author;
   final Set<ArbItem> items;
 
-  Arb({
-    DateTime? lastModified,
-    this.locale,
+  ArbFile({
+    required this.lastModified,
+    required this.locale,
     this.context,
     this.author,
-    this.items = const {},
-  }) : lastModified = lastModified ?? DateTime.now();
+    required this.items,
+  });
 
-  factory Arb.fromArb(Map<String, dynamic> arb) {
+  factory ArbFile.empty() => ArbFile(
+        lastModified: DateTime.now(),
+        locale: "",
+        items: {},
+      );
+
+  factory ArbFile.fromArb(Map<String, dynamic> arb) {
     final bundleItems = Map.fromEntries(
       arb.entries.where(
         (entry) => !entry.key.startsWith('@@'),
       ),
     );
 
-    final _arb = Arb(
+    final _arb = ArbFile(
       author: arb['@@author'],
       context: arb['@@context'],
       lastModified: arb['@@last_modified'] == null
@@ -40,129 +47,55 @@ class Arb {
 
       final name = item.key;
       final value = item.value;
-      final options = bundleItems['@$name'] ?? <String, dynamic>{};
-
-      _arb.items.add(ArbItem(
-        name: name,
-        value: value,
-        description: options['description'],
-        placeholders: options['placeholders'],
-        type: options['type'],
-      ));
+      final options = bundleItems["@$name"] ?? <String, dynamic>{};
+      _arb.items.add(
+        ArbItem(
+          name: name,
+          value: value,
+          arbItemOptions: ArbItemOptions(
+            description: options["description"],
+            placeholders: options['placeholders'],
+            type: options['type'],
+          ),
+        ),
+      );
     }
 
     return _arb;
   }
 
-  factory Arb.fromFile(File file) {
-    final jsonString = file.readAsStringSync();
-    return Arb.fromArb(json.decode(jsonString));
-  }
-
-  /// Get ARB format Object.
-  SplayTreeMap<String, dynamic> get arb {
-    final SplayTreeMap<String, dynamic> _arb = SplayTreeMap<String, dynamic>();
-    // _arb['@@last_modified'] = lastModified.toString();
-
-    if (locale != null) {
-      _arb['@@locale'] = locale;
-    }
-    if (context != null) {
-      _arb['@@context'] = context;
-    }
-    if (author != null) {
-      _arb['@@author'] = author;
-    }
-
-    for (final item in items) {
-      print("${item.name}: ${item.arb}");
-      _arb.addAll(item.arb);
-    }
-
-    return _arb;
-  }
-
-  /// Makes new [Bundle] which merged this with [other].
-  /// Last modified time will update as now.
-  /// Items that not in this but other are append.
-  /// Rest of all are same as this.
-  Arb merge(Arb other) {
-    // final keys = items.map((item) => item.name).toSet();
-    // final otherKeys = other.items.map((item) => item).toSet();
-    // // final newKeys = otherKeys.difference(keys);
-    // // final newItems =
-    // //     other.items.where((item) => newKeys.contains(item.name)).toSet();
-    items.addAll(other.items);
-    return Arb(
-      lastModified: DateTime.now(),
-      author: author,
-      context: context,
-      locale: locale,
-      items: items,
+  ArbFile copyWith({
+    DateTime? lastModified,
+    String? locale,
+    String? context,
+    String? author,
+    Set<ArbItem>? items,
+  }) {
+    return ArbFile(
+      lastModified: lastModified ?? this.lastModified,
+      locale: locale ?? this.locale,
+      context: context ?? this.context,
+      author: author ?? this.author,
+      items: items ?? this.items,
     );
   }
-}
 
-/// Model class for item in ARB file.
-class ArbItem {
-  final String name;
-  final String value;
-  final ArbItemOptions options;
-
-  ArbItem({
-    required this.name,
-    required this.value,
-    String? type,
-    String? description,
-    Map<String, dynamic>? placeholders,
-  }) : options = ArbItemOptions(
-          type: type,
-          description: description,
-          placeholders: placeholders,
-        );
-
-  /// Get ARB format Object.
   SplayTreeMap<String, dynamic> get arb {
-    final SplayTreeMap<String, dynamic> _options =
-        SplayTreeMap<String, dynamic>();
-    _options[name] = value;
+    final SplayTreeMap<String, dynamic> arbTemp = SplayTreeMap();
 
-    if (options.arb != null) {
-      _options['@$name'] = options.arb;
+    arbTemp["@@locale"] = locale;
+    arbTemp["@@last_modified"] =
+        DateFormat("dd/MM/yyyy - hh:mm:ss").format(lastModified);
+    if (context != null) {
+      arbTemp["@@context"] = context;
+    }
+    if (author != null) {
+      arbTemp["@@author"] = author;
+    }
+    for (var element in items) {
+      arbTemp.addAll(element.arb);
     }
 
-    return _options;
-  }
-}
-
-/// Model class for options in ARB item.
-class ArbItemOptions {
-  final String? type;
-  final String? description;
-  final Map<String, dynamic>? placeholders;
-
-  ArbItemOptions({
-    this.type,
-    this.description,
-    this.placeholders,
-  });
-
-  /// Get ARB format Object.
-  SplayTreeMap<String, dynamic>? get arb {
-    final SplayTreeMap<String, dynamic> _options =
-        SplayTreeMap<String, dynamic>();
-    if (type != null) {
-      _options['type'] = type;
-    }
-
-    if (description != null) {
-      _options['desc'] = description;
-    }
-
-    if (placeholders != null) {
-      _options['placeholders'] = placeholders;
-    }
-
-    return _options.length > 0 ? _options : null;
+    return arbTemp;
   }
 }
