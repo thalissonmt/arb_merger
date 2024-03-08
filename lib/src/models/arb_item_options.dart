@@ -17,7 +17,7 @@ class ArbItemOptions {
     }
 
     if (description != null) {
-      options['desc'] = description;
+      options['description'] = description;
     }
 
     if (placeholders != null) {
